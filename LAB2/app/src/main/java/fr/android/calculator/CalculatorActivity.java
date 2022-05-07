@@ -51,10 +51,16 @@ public class CalculatorActivity extends AppCompatActivity {
                 break;
         }
 
+        boolean lastCharIsIllegal = lastCharIsInPattern(operationText.getText());
         if(operationText.length() > 0) {
-           equalButton.setVisibility(View.VISIBLE);
-           eraseButton.setVisibility(View.VISIBLE);
+            equalButton.setVisibility(lastCharIsIllegal ? View.INVISIBLE : View.VISIBLE);
+            eraseButton.setVisibility(View.VISIBLE);
         }
+    }
+
+    public boolean lastCharIsInPattern(CharSequence operation) {
+        char lastChar = operation.charAt(operation.length() - 1);
+        return new String("*-+/").contains(String.valueOf(lastChar));
     }
 
     /**
@@ -83,13 +89,17 @@ public class CalculatorActivity extends AppCompatActivity {
         if(operationText.length() > 0) {
             String newOpText = operationText.getText().toString().substring(0, operationText.getText().toString().length() - 1);
             operationText.setText(newOpText);
+        } else {
+            return;
         }
 
+        Button equalButton = (Button) findViewById(R.id.buttonEqual);
         if(operationText.length() == 0) {
-            Button equalButton = (Button) findViewById(R.id.buttonEqual);
             Button eraseButton = (Button) findViewById(R.id.buttonClear);
             equalButton.setVisibility(View.INVISIBLE);
             eraseButton.setVisibility(View.INVISIBLE);
+        } else if(lastCharIsInPattern(operationText.getText())) {
+            equalButton.setVisibility(View.INVISIBLE);
         }
         TextView resultText = (TextView) findViewById(R.id.resultText);
         resultText.setText("");
