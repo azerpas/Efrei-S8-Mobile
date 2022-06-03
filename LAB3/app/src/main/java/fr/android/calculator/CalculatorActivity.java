@@ -14,6 +14,15 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class CalculatorActivity extends AppCompatActivity {
@@ -22,6 +31,10 @@ public class CalculatorActivity extends AppCompatActivity {
     private TextView loadingText;
     private int errorCode;
 
+    private Socket client;
+
+    private static final int PORT = 9876;
+    private static final String IP = "10.0.2.2";
 
     /**
      * @description: Creation of context of the activity
@@ -35,8 +48,18 @@ public class CalculatorActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar1);
         loadingText = findViewById(R.id.loadingText);
 
-
+        // Socket client
+        new Thread(new CalculusRunner()).start();
     }
+
+    /**
+     * Call the server to make the operation
+     * @param view
+     */
+    public void callServer(View view) {
+        new Thread(new OperationRunner()).start();
+    }
+
     /**
      *
      * @param operation string of the operation wrote on the operation TextField
@@ -265,5 +288,50 @@ public class CalculatorActivity extends AppCompatActivity {
             Toast.makeText(CalculatorActivity.this, "Finished",
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    class CalculusRunner implements Runnable {
+        @Override
+        public void run() {
+            try {
+                initSocket();
+                System.out.println("Setup client");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    class OperationRunner implements Runnable {
+        @Override
+        public void run() {
+            try {
+                if (client.isClosed() == true) {
+                    initSocket();
+                }
+                TextView text = (TextView) findViewById(R.id.operationText);
+                String operation = text.getText().toString();
+                // Send
+                DataOutputStream dOut = new DataOutputStream(client.getOutputStream());
+                dOut.writeUTF(operation);
+                dOut.flush();
+                // Read
+                DataInputStream dis = new DataInputStream(client.getInputStream());
+                Double response = dis.readDouble();
+                dOut.close();
+                dis.close();
+                TextView resultText = findViewById(R.id.resultText);
+                resultText.setText(String.valueOf(response));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void initSocket() throws IOException {
+        InetAddress serverAddress = InetAddress.getByName(IP);
+        client = new Socket(serverAddress, PORT);
     }
 }
