@@ -59,13 +59,12 @@ public class CalculatorActivity extends AppCompatActivity {
     public void callServer(View view) {
         new Thread(new OperationRunner()).start();
     }
-
     /**
      *
      * @param operation string of the operation wrote on the operation TextField
      * @return Result of the operation
      */
-    public double fromStringToOperation (String operation) {
+    public double fromStringToOperation (String operation) throws Exception {
         String[] operationParsed = operation.split("(?<=[-+*/])|(?=[-+*/])");
         // AL stores operators
         ArrayList<String> operator = new ArrayList<>();
@@ -81,7 +80,7 @@ public class CalculatorActivity extends AppCompatActivity {
                     operand.add(Double.parseDouble(operationParsed[i]));
                 }catch (Exception e){
                     errorCode = 1;
-                    return 0;
+                    throw new Exception("Could not parse");
                 }
 
 
@@ -169,23 +168,25 @@ public class CalculatorActivity extends AppCompatActivity {
             TextView operationText = findViewById(R.id.operationText);
             TextView resultText = findViewById(R.id.resultText);
             if(operationText.length() > 0) {
-                double result = fromStringToOperation(operationText.getText().toString());
-                if(result != 0) {
+                try {
+                    double result = fromStringToOperation(operationText.getText().toString());
                     resultText.setText(String.valueOf(result));
-                }else{
-                    resultText.setText("Error");
-                    switch (errorCode) {
-                        case 2:
-                            Toast.makeText(this, "Division by zero", Toast.LENGTH_SHORT).show();
-                            break;
-                        case 1:
-                            Toast.makeText(this, "Invalid operation", Toast.LENGTH_SHORT).show();
-                            break;
+                } catch (Exception e) {
+                    if(e.getMessage().contains("Could not parse")) {
+                        resultText.setText("Error");
+                        switch (errorCode) {
+                            case 2:
+                                Toast.makeText(this, "Division by zero", Toast.LENGTH_SHORT).show();
+                                break;
+                            case 1:
+                                Toast.makeText(this, "Invalid operation", Toast.LENGTH_SHORT).show();
+                                break;
+                        }
                     }
                 }
             }
-        }catch (Exception e) {
-            e.getMessage();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
 
 
@@ -213,61 +214,21 @@ public class CalculatorActivity extends AppCompatActivity {
         resultText.setText("");
     }
 
-
-
-    /**
-     * Function to progress the progressBar when click on result button
-     * @param view
-     * */
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void progressBarHandler(View view) {
         try {
-            downloadTask dt = new downloadTask();
-            /*
-            * This code is here to make us able to understand handlers. In this case, we are using a handler to progress the progressBar,
-            * this one will add a new value of the progressBar to the MessageQueue. Then, a thread will loop into this messageQueue
-            * and will change the progressBar value.
-            * */
-            Runnable runnable = () -> {
-                for (int i = 0; i <= 10; i++) {
-                    final int value = i;
-                    // simulate a slow network !
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException e){
-                        e.printStackTrace(); }
-                    handler.post(() -> progressBar.setProgress(value, true));
-                    if(value == 10) {
-                        resultHandler();
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            };
-            // We create a new thread to run the progressBar
-            new Thread(runnable).start();
-
-            // Call asyncTask to change the loading textfield
+            calculateTask dt = new calculateTask();
             dt.execute("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
-
-        }catch (Exception e) {
-            e.getMessage();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
-    /**
-     * @description: This function will be called when the user click on the equal button
-     *
-     * To Explain:
-     *  - This task is mainly called when the user click on the equal button.
-     *  - We put in it some string params to pass a count to loop into the task.
-     *  - Then, in the loop, for each count, we will add a new value to a Queue (in publishProgress method) that we are going to work with.
-     *  - After in the onProgressUpdate, we will change the text of the textfield with the value of the first element of the queue and then after
-     *  the task will pop it from it.
-     *  - After all the process, when the task is finished, we will call the onPostExecute function -> to trigger after the resultHandler function.
-     * */
-    private class downloadTask extends AsyncTask<String, Integer, Long> {
-        protected Long doInBackground(String... purcentage) {
-            int count = purcentage.length;
+    @SuppressLint("StaticFieldLeak")
+    private class calculateTask extends AsyncTask<String, Integer, Long> {
+        protected Long doInBackground(String... percentages) {
+            // Imitates a I/O
+            int count = percentages.length;
             long totalSize = 0;
             for (int i = 0; i <= count; i++) {
                 try {
@@ -281,12 +242,15 @@ public class CalculatorActivity extends AppCompatActivity {
 
             return totalSize;
         }
+        @RequiresApi(api = Build.VERSION_CODES.N)
         protected void onProgressUpdate(Integer... p) {
-            loadingText.setText((p[0] * 10) + "%");
+            // Update the progress bar every progress
+            handler.post(() -> progressBar.setProgress(p[0], true));
         }
         protected void onPostExecute(Long result) {
-            Toast.makeText(CalculatorActivity.this, "Finished",
-                    Toast.LENGTH_LONG).show();
+            // Call the result handler at the end
+            resultHandler();
+            Toast.makeText(CalculatorActivity.this, "Finished", Toast.LENGTH_LONG).show();
         }
     }
 
