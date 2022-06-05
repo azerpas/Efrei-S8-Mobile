@@ -2,12 +2,14 @@ package fr.android.calculator;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -47,6 +49,23 @@ public class CalculatorActivity extends AppCompatActivity {
         handler = new Handler();
         progressBar = findViewById(R.id.progressBar1);
         loadingText = findViewById(R.id.loadingText);
+        // Toolbar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.setTitle("Magic Calculator");
+        toolbar.inflateMenu(R.menu.calculator_menu);
+        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                if (item.getItemId() == R.id.last_op) {
+                    // Open webview
+                    return true;
+                } else {
+
+                    return false;
+                }
+            }
+        });
 
         // Socket client
         new Thread(new CalculusRunner()).start();
@@ -224,7 +243,6 @@ public class CalculatorActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
     private class calculateTask extends AsyncTask<String, Integer, Long> {
         protected Long doInBackground(String... percentages) {
             // Imitates a I/O
