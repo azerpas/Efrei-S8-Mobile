@@ -4,7 +4,25 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CalculatorActivity">
+    tools:context=".CalculatorActivity"
+    android:name="MainActivity"
+    >
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/my_toolbar"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="84dp"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+    </androidx.appcompat.widget.Toolbar>
 
     <LinearLayout
         android:id="@+id/linearLayout"
@@ -213,19 +231,19 @@
         android:layout_height="0dp"
         android:layout_marginTop="140dp"
         android:layout_marginEnd="1dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="350dp"
         android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@+id/progressBar1"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/gridLayout"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/my_toolbar">
 
         <Button
             android:id="@+id/buttonEqual"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight=".75"
-            android:onClick="progressBarHandler"
+            android:onClick="callServer"
             android:text="@string/Equal"
             android:visibility="invisible" />
 
@@ -252,22 +270,20 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout3"/>
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout3" />
+
     <TextView
         android:id="@+id/loadingText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginRight="16dp"
         android:gravity="center"
         android:text="@string/LoadingText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/progressBar1" />
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,19 +2,29 @@ package fr.android.calculator;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
-import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class CalculatorActivity extends AppCompatActivity {
@@ -23,6 +33,10 @@ public class CalculatorActivity extends AppCompatActivity {
     private TextView loadingText;
     private int errorCode;
 
+    private Socket client;
+
+    private static final int PORT = 9876;
+    private static final String IP = "10.0.2.2";
 
     /**
      * @description: Creation of context of the activity
@@ -35,6 +49,34 @@ public class CalculatorActivity extends AppCompatActivity {
         handler = new Handler();
         progressBar = findViewById(R.id.progressBar1);
         loadingText = findViewById(R.id.loadingText);
+        // Toolbar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.setTitle("Magic Calculator");
+        toolbar.inflateMenu(R.menu.calculator_menu);
+        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                if (item.getItemId() == R.id.last_op) {
+                    // Open webview
+                    return true;
+                } else {
+
+                    return false;
+                }
+            }
+        });
+
+        // Socket client
+        new Thread(new CalculusRunner()).start();
+    }
+
+    /**
+     * Call the server to make the operation
+     * @param view
+     */
+    public void callServer(View view) {
+        new Thread(new OperationRunner()).start();
     }
     /**
      *
@@ -59,6 +101,8 @@ public class CalculatorActivity extends AppCompatActivity {
                     errorCode = 1;
                     throw new Exception("Could not parse");
                 }
+
+
             }else{
                 operator.add(operationParsed[i]);
             }
@@ -159,13 +203,19 @@ public class CalculatorActivity extends AppCompatActivity {
                         }
                     }
                 }
-
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+
+
+
     }
 
+    /**
+     * @description: Cliking on the erase button event
+     * @param view
+     */
     public void eraseHandler(View view) {
         TextView operationText = findViewById(R.id.operationText);
         if(operationText.length() > 0) {
@@ -193,7 +243,6 @@ public class CalculatorActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("StaticFieldLeak")
     private class calculateTask extends AsyncTask<String, Integer, Long> {
         protected Long doInBackground(String... percentages) {
             // Imitates a I/O
@@ -205,6 +254,7 @@ public class CalculatorActivity extends AppCompatActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                // Publish progress will send to onProgressUpdate method the new value to print on the UI
                 publishProgress((int) ((i / (float) count) * 10));
             }
 
@@ -220,5 +270,50 @@ public class CalculatorActivity extends AppCompatActivity {
             resultHandler();
             Toast.makeText(CalculatorActivity.this, "Finished", Toast.LENGTH_LONG).show();
         }
+    }
+
+    class CalculusRunner implements Runnable {
+        @Override
+        public void run() {
+            try {
+                initSocket();
+                System.out.println("Setup client");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    class OperationRunner implements Runnable {
+        @Override
+        public void run() {
+            try {
+                if (client.isClosed() == true) {
+                    initSocket();
+                }
+                TextView text = (TextView) findViewById(R.id.operationText);
+                String operation = text.getText().toString();
+                // Send
+                DataOutputStream dOut = new DataOutputStream(client.getOutputStream());
+                dOut.writeUTF(operation);
+                dOut.flush();
+                // Read
+                DataInputStream dis = new DataInputStream(client.getInputStream());
+                Double response = dis.readDouble();
+                dOut.close();
+                dis.close();
+                TextView resultText = findViewById(R.id.resultText);
+                resultText.setText(String.valueOf(response));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void initSocket() throws IOException {
+        InetAddress serverAddress = InetAddress.getByName(IP);
+        client = new Socket(serverAddress, PORT);
     }
 }
